@@ -269,6 +269,7 @@
             this.deleteVehicleButton.TabIndex = 12;
             this.deleteVehicleButton.Text = "Удалить";
             this.deleteVehicleButton.UseVisualStyleBackColor = true;
+            this.deleteVehicleButton.Click += new System.EventHandler(this.deleteVehicleButton_Click);
             // 
             // dataGridView2
             // 
@@ -280,6 +281,7 @@
             this.dataGridView2.Name = "dataGridView2";
             this.dataGridView2.Size = new System.Drawing.Size(1154, 579);
             this.dataGridView2.TabIndex = 0;
+            this.dataGridView2.DataError += new System.Windows.Forms.DataGridViewDataErrorEventHandler(this.dataGridView1_DataError);
             // 
             // saveVehiclesButton
             // 
@@ -289,6 +291,7 @@
             this.saveVehiclesButton.TabIndex = 10;
             this.saveVehiclesButton.Text = "Сохранить";
             this.saveVehiclesButton.UseVisualStyleBackColor = true;
+            this.saveVehiclesButton.Click += new System.EventHandler(this.saveVehiclesButton_Click);
             // 
             // addVehicleButton
             // 
@@ -298,6 +301,7 @@
             this.addVehicleButton.TabIndex = 11;
             this.addVehicleButton.Text = "Добавить";
             this.addVehicleButton.UseVisualStyleBackColor = true;
+            this.addVehicleButton.Click += new System.EventHandler(this.addVehicleButton_Click);
             // 
             // tabPage1
             // 
@@ -357,6 +361,7 @@
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.Size = new System.Drawing.Size(1170, 584);
             this.dataGridView1.TabIndex = 0;
+            this.dataGridView1.DataError += new System.Windows.Forms.DataGridViewDataErrorEventHandler(this.dataGridView1_DataError);
             // 
             // tabControl1
             // 
@@ -401,6 +406,7 @@
             this.directoriesGridView.Name = "directoriesGridView";
             this.directoriesGridView.Size = new System.Drawing.Size(1052, 579);
             this.directoriesGridView.TabIndex = 9;
+            this.directoriesGridView.DataError += new System.Windows.Forms.DataGridViewDataErrorEventHandler(this.dataGridView1_DataError);
             // 
             // saveDirectoryButton
             // 

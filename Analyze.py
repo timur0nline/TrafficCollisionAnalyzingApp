@@ -104,8 +104,6 @@ try:
         plt.bar(df["Category"], df["Value"])
     elif chart_type == "Круговая диаграмма":
         plt.pie(df["Value"], labels=df["Category"], autopct="%1.1f%%")
-    elif chart_type == "Линейная":
-        plt.plot(df["Category"], df["Value"])
     else:
         print("Неизвестный тип графика")
         sys.exit(1)

@@ -18,6 +18,7 @@ namespace Анализ_данных_о_ДТП
         private string currentDirectoryName;
         private DataTable accidentsTable;
         private DataTable vehiclesTable;
+        private readonly System.Collections.Generic.Dictionary<string, DataTable> directoryCache = new System.Collections.Generic.Dictionary<string, DataTable>();
         public mainForm()
         {
             InitializeComponent();
@@ -25,6 +26,15 @@ namespace Анализ_данных_о_ДТП
         static void SetDoubleBuffer(Control dgv, bool DoubleBuffered)
         {
             typeof(Control).InvokeMember("DoubleBuffered",BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty,null, dgv, new object[] {DoubleBuffered});
+        }
+        private DataTable GetDirectoryCached(string tableName)
+        {
+            if (!directoryCache.ContainsKey(tableName))
+            {
+                directoryCache[tableName] = DirectoryManager.GetDirectoryTable(tableName);
+            }
+
+            return directoryCache[tableName];
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -55,40 +65,72 @@ namespace Анализ_данных_о_ДТП
         private async void ParseData(bool clear = true)
         {
             fileSelectButton.Enabled = false;
+            addButton.Enabled = false;
+            tabControl1.Enabled = false;
+
             Cursor = Cursors.WaitCursor;
+
             await Task.Run(() =>
             {
                 string scriptPath = Path.Combine(pythonDirectory, "ParseData.py");
+
                 ProcessStartInfo start = new ProcessStartInfo();
+
                 start.FileName = "py";
                 start.Arguments = $"\"{scriptPath}\"";
                 start.WorkingDirectory = pythonDirectory;
+
                 start.UseShellExecute = false;
                 start.CreateNoWindow = true;
+
                 start.RedirectStandardError = true;
                 start.RedirectStandardOutput = true;
+
                 Process process = Process.Start(start);
+
                 string errors = process.StandardError.ReadToEnd();
+
                 process.WaitForExit();
+
                 if (!string.IsNullOrWhiteSpace(errors))
                 {
                     throw new Exception(errors);
                 }
+
                 ImportManager.ImportData(clear);
             });
 
-            Cursor = Cursors.Default;
-            fileSelectButton.Enabled = true;
+            directoryCache.Clear();
+
+            dataGridView1.DataSource = null;
+            dataGridView2.DataSource = null;
+
+            dataGridView1.Columns.Clear();
+            dataGridView2.Columns.Clear();
+
             LoadAccidents();
-            ConfigureAccidentGrid();
             LoadVehicles();
+
+            ConfigureAccidentGrid();
             ConfigureVehicleGrid();
+
+            Cursor = Cursors.Default;
+
+            fileSelectButton.Enabled = true;
+            addButton.Enabled = true;
+            tabControl1.Enabled = true;
+
             MessageBox.Show("Импорт завершен");
         }
         private void LoadAccidents()
         {
             accidentsTable = AccidentManager.GetAccidentsTable();
             dataGridView1.DataSource = accidentsTable;
+        }
+        private void LoadVehicles()
+        {
+            vehiclesTable = VehicleManager.GetVehiclesTable();
+            dataGridView2.DataSource = vehiclesTable;
         }
         private void ConfigureAccidentGrid()
         {
@@ -147,22 +189,21 @@ namespace Анализ_данных_о_ДТП
         private void AddComboColumn(DataGridView grid, string property, string header, string tableName, string idColumn)
         {
             DataGridViewComboBoxColumn column = new DataGridViewComboBoxColumn();
-
             column.DataPropertyName = property;
             column.HeaderText = header;
             column.Name = property;
-
-            column.DataSource = DirectoryManager.GetDirectoryTable(tableName);
+            column.DataSource = GetDirectoryCached(tableName);
             column.DisplayMember = "Name";
             column.ValueMember = idColumn;
-
+            column.ValueType = typeof(int);
             grid.Columns.Add(column);
         }
-        private void LoadVehicles()
+        private void dataGridView1_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            vehiclesTable = VehicleManager.GetVehiclesTable();
-            dataGridView2.DataSource = vehiclesTable;
+            e.ThrowException = false;
         }
+
+
         private void fileSelectButton_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
@@ -179,8 +220,6 @@ namespace Анализ_данных_о_ДТП
             string selectedFileName = openFileDialog1.FileName;
             File.Copy(selectedFileName, Path.Combine(pythonDirectory, "data.csv"), true);
             ParseData();
-            tabControl1.Enabled = true;
-            addButton.Enabled = true;
 
         }
         private void buildAnalysisButton_Click(object sender, EventArgs e)
@@ -383,6 +422,18 @@ namespace Анализ_данных_о_ДТП
 
             row["Date"] = DateTime.Now.ToString("dd.MM.yyyy");
             row["Time"] = DateTime.Now.ToString("HH:mm");
+
+            row["AccidentTypeID"] = 1;
+            row["DistrictID"] = 1;
+            row["WeatherConditionID"] = 1;
+            row["RoadStateID"] = 1;
+            row["LightingConditionID"] = 1;
+
+            row["VehicleCount"] = 0;
+            row["ParticipantCount"] = 0;
+            row["DeadCount"] = 0;
+            row["InjuredCount"] = 0;
+
             accidentsTable.Rows.Add(row);
         }
 
@@ -412,6 +463,55 @@ namespace Анализ_данных_о_ДТП
             File.Copy(selectedFileName, Path.Combine(pythonDirectory, "data.csv"), true);
             ParseData(false);
             tabControl1.Enabled = true;
+        }
+
+        private void addVehicleButton_Click(object sender, EventArgs e)
+        {
+            if (vehiclesTable == null)
+            {
+                return;
+            }
+
+            DataRow row = vehiclesTable.NewRow();
+
+            row["VehicleTypeID"] = 1;
+            row["VehicleModelID"] = 1;
+            row["OwnershipTypeID"] = 1;
+            row["ColorID"] = 1;
+            row["DriveTypeID"] = 1;
+            row["HitAndRunStatusID"] = 1;
+
+            row["Year"] = DateTime.Now.Year;
+
+            row["TechnicalIssues"] = "";
+
+            vehiclesTable.Rows.Add(row);
+        }
+
+        private void saveVehiclesButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                VehicleManager.SaveChanges(vehiclesTable);
+
+                ConfigureVehicleGrid();
+
+                MessageBox.Show("Изменения сохранены");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void deleteVehicleButton_Click(object sender, EventArgs e)
+        {
+            if (dataGridView2.CurrentRow == null)
+            {
+                return;
+            }
+
+            dataGridView2.Rows.Remove(dataGridView2.CurrentRow);
         }
     }
 }
